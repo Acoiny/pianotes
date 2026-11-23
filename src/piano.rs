@@ -36,7 +36,12 @@ impl Piano {
     }
 
     fn draw(&self, frame: &mut Frame) {
-        frame.render_widget(self, frame.area());
+        // cut the area in smaller pieces, so the piano is at the bottom
+        let mut area = frame.area();
+        let piano_height = 5;
+        area.y = area.height - piano_height;
+        area.height = piano_height;
+        frame.render_widget(self, area);
     }
 
     // fn draw(&self, frame: &mut Frame) {
@@ -125,6 +130,11 @@ impl Widget for &Piano {
             Paragraph::new(msg).centered().render(area, buf);
             return;
         }
+        //
+        // Paragraph::new(Line::from(format!("Rect: {:?}", area).bold()))
+        //     .centered()
+        //     .render(area, buf);
+        // return;
 
         let width_scale = if area.width > 88 * 2 { 2 } else { 1 };
 
@@ -134,15 +144,12 @@ impl Widget for &Piano {
         let accidental_percentage = 0.6;
 
         for i in 0u16..88 {
-            let accidental = match i % 12 {
-                1 | 4 | 6 | 9 | 11 => true,
-                _ => false,
-            };
+            let accidental = Piano::is_accidental(i);
 
             if !accidental {
                 let cell = Rect::new((area.x + i) * width_scale, area.y, width_scale, area.height);
                 buf.set_style(cell, white);
-                buf.set_string(cell.x, cell.y + area.height - 1, " ", white);
+                // buf.set_string(cell.x, cell.y + area.height - 1, " ", white);
             } else {
                 let key_height =
                     (area.height as f64 / (1.0 / accidental_percentage)).max(1.0) as u16;
@@ -151,7 +158,7 @@ impl Widget for &Piano {
 
                 let lower = Rect::new(
                     (area.x + i) * width_scale,
-                    key_height,
+                    area.y + key_height,
                     width_scale,
                     area.height,
                 );
