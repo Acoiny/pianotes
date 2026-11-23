@@ -12,6 +12,8 @@ use ratatui::{
 
 #[derive(Debug, Default)]
 pub struct Piano {
+    keyboard: Keyboard,
+    pianoroll: Keyroll,
     exit: bool,
 }
 
@@ -37,89 +39,28 @@ impl Piano {
 
     fn draw(&self, frame: &mut Frame) {
         // cut the area in smaller pieces, so the piano is at the bottom
-        let mut area = frame.area();
         let piano_height = 5;
-        area.y = area.height - piano_height;
-        area.height = piano_height;
-        frame.render_widget(self, area);
-    }
 
-    // fn draw(&self, frame: &mut Frame) {
-    //     let colors = [Color::White, Color::Black, Color::Blue, Color::Red];
-    //     let canvas = Canvas::default()
-    //         .x_bounds([0., 88.]) // make size double of what is needed, so rectangle works
-    //         .y_bounds([0., 100.])
-    //         .marker(Marker::Block)
-    //         .paint(|ctx| {
-    //             // draw 88 keys
-    //             for i in 0..88 {
-    //                 let accidental = Piano::is_accidental(i);
-    //
-    //                 let color = if accidental {
-    //                     Color::Black
-    //                 } else {
-    //                     Color::White
-    //                 };
-    //
-    //                 let offset = if accidental { 1.0 } else { 0.0 };
-    //
-    //                 ctx.draw(&Line::new(
-    //                     (i as f64),
-    //                     offset,
-    //                     (i as f64),
-    //                     10. - offset,
-    //                     color,
-    //                 ));
-    //                 // ctx.draw(&Rectangle::new(
-    //                 //     (i as f64) * 2.0,
-    //                 //     offset,
-    //                 //     1.0,
-    //                 //     10.0 - offset,
-    //                 //     color,
-    //                 // ));
-    //
-    //                 if accidental {
-    //                     ctx.draw(&Line::new((i as f64), 0., (i as f64), offset, Color::White));
-    //                     // ctx.draw(&Rectangle::new(
-    //                     //     (i as f64) * 2.0,
-    //                     //     0.0,
-    //                     //     1.0,
-    //                     //     offset,
-    //                     //     Color::White,
-    //                     // ));
-    //                 }
-    //                 // ctx.draw(&Rectangle::new(
-    //                 //     2.0,
-    //                 //     10.0,
-    //                 //     1.0,
-    //                 //     10.0,
-    //                 //     if 1 % 2 == 0 {
-    //                 //         Color::White
-    //                 //     } else {
-    //                 //         Color::Black
-    //                 //     },
-    //                 // ));
-    //                 //
-    //                 // ctx.draw(&Line::new(
-    //                 //     i as f64,
-    //                 //     0.0,
-    //                 //     i as f64,
-    //                 //     10.0,
-    //                 //     if i % 2 == 0 {
-    //                 //         Color::White
-    //                 //     } else {
-    //                 //         Color::Black
-    //                 //     },
-    //                 // ));
-    //             }
-    //         });
-    //
-    //     frame.render_widget(canvas, frame.area());
-    // }
+        let area = Rect::new(
+            0,
+            frame.area().height - piano_height,
+            frame.area().width,
+            piano_height,
+        );
+
+        frame.render_widget(&self.keyboard, area);
+    }
 }
 
-impl Widget for &Piano {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+#[derive(Debug, Default)]
+// The basic keyboard to render
+struct Keyboard {}
+
+impl Widget for &Keyboard {
+    fn render(self, area: Rect, buf: &mut Buffer)
+    where
+        Self: Sized,
+    {
         // considerations:
         //  if the terminal is smaller than 88, we render an error message/ask the user to resize
         // if the terminal is big enough, render each key one-wide
@@ -165,5 +106,26 @@ impl Widget for &Piano {
                 buf.set_style(lower, white);
             }
         }
+    }
+}
+
+#[derive(Debug)]
+// Renders all the currently pressed keys and scrolls them
+struct Keyroll {
+    keys: [u32; 88],
+}
+
+impl Default for Keyroll {
+    fn default() -> Self {
+        Keyroll { keys: [0; 88] }
+    }
+}
+
+impl Widget for &Keyroll {
+    fn render(self, area: Rect, buf: &mut Buffer)
+    where
+        Self: Sized,
+    {
+        todo!()
     }
 }
