@@ -19,7 +19,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Color, Stylize};
 use ratatui::symbols::Marker;
-use ratatui::text::{Line as TextLine, Span};
+use ratatui::text::Line as TextLine;
 use ratatui::widgets::canvas::{Canvas, Line, Map, MapResolution, Points, Rectangle};
 
 pub fn run() -> std::io::Result<()> {
@@ -40,10 +40,7 @@ fn render(frame: &mut Frame) {
     let [top, main] = frame.area().layout(&vertical);
     let [area] = main.layout(&horizontal);
 
-    let title = TextLine::from_iter([
-        Span::from("Canvas Widget").bold(),
-        Span::from(" (Press 'q' to quit)"),
-    ]);
+    let title = TextLine::from_iter(["Canvas Widget".bold(), " (Press 'q' to quit)".into()]);
     frame.render_widget(title.centered(), top);
 
     render_canvas(frame, area);

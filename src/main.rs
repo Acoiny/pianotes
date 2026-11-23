@@ -11,13 +11,14 @@ use ratatui::{
     widgets::{Block, Paragraph, Widget},
 };
 
-mod canvas;
+mod map;
+mod piano;
 
 fn main() -> io::Result<()> {
-    if args().len() > 1 {
-        canvas::run()
-    } else {
-        ratatui::run(|term| App::default().run(term))
+    match args().len() {
+        1 => map::run(),
+        2 => ratatui::run(|term| piano::Piano::default().run(term)),
+        _ => ratatui::run(|term| App::default().run(term)),
     }
 }
 
