@@ -1,4 +1,4 @@
-use std::io;
+use std::{env::args, io};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
@@ -11,8 +11,14 @@ use ratatui::{
     widgets::{Block, Paragraph, Widget},
 };
 
+mod canvas;
+
 fn main() -> io::Result<()> {
-    ratatui::run(|term| App::default().run(term))
+    if args().len() > 1 {
+        canvas::run()
+    } else {
+        ratatui::run(|term| App::default().run(term))
+    }
 }
 
 #[derive(Debug, Default)]

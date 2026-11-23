@@ -22,7 +22,7 @@ use ratatui::symbols::Marker;
 use ratatui::text::{Line as TextLine, Span};
 use ratatui::widgets::canvas::{Canvas, Line, Map, MapResolution, Points, Rectangle};
 
-fn main() -> Result<()> {
+pub fn run() -> std::io::Result<()> {
     ratatui::run(|terminal| {
         loop {
             terminal.draw(render)?;
