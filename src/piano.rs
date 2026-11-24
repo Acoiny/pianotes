@@ -20,6 +20,7 @@ pub struct Piano {
 const COLOR_NATURAL: ratatui::prelude::Color = Color::Blue;
 const COLOR_ACCIDENTAL: ratatui::prelude::Color = Color::Cyan;
 
+// height of the piano in terminal lines
 const PIANO_HEIGHT: u16 = 5;
 
 impl Piano {
@@ -27,9 +28,9 @@ impl Piano {
         let mut height = 0;
         while !self.exit {
             term.draw(|frame| {
-                self.draw(frame);
-                // self.pianoroll.update(frame.area().height as i32);
                 height = frame.area().height - PIANO_HEIGHT; // TODO: remove, this is for debugging
+
+                self.draw(frame);
             })?;
 
             let ev = event::read()?;
@@ -38,8 +39,14 @@ impl Piano {
                 match ev.as_key_event().unwrap().code {
                     // if the key is q, quit
                     KeyCode::Char('q') => self.exit = true,
-                    KeyCode::Char('p') => self.pianoroll.press_key(0),
-                    KeyCode::Char('r') => self.pianoroll.release_key(0),
+                    KeyCode::Char('p') => {
+                        self.pianoroll.press_key(0);
+                        self.pianoroll.press_key(1);
+                    }
+                    KeyCode::Char('r') => {
+                        self.pianoroll.release_key(0);
+                        self.pianoroll.release_key(1);
+                    }
                     // otherwise update a frame
                     _ => self.pianoroll.update(height as i32),
                 };
