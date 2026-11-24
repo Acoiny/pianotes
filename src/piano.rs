@@ -1,6 +1,6 @@
 use std::io;
 
-use crossterm::event::{self, KeyCode};
+use crossterm::event::{self, KeyCode, KeyModifiers};
 use ratatui::{DefaultTerminal, Frame, layout::Rect, style::Color};
 
 use crate::keyboard::Keyboard;
@@ -19,6 +19,8 @@ pub const COLOR_ACCIDENTAL: ratatui::prelude::Color = Color::Cyan;
 // height of the piano in terminal lines
 const PIANO_HEIGHT: u16 = 5;
 
+const DEBUG_KEYS: [i32; 3] = [27, 31, 34];
+
 impl Piano {
     pub fn run(&mut self, term: &mut DefaultTerminal) -> io::Result<()> {
         let mut height = 0;
@@ -32,18 +34,29 @@ impl Piano {
             let ev = event::read()?;
 
             if ev.is_key_press() {
-                match ev.as_key_event().unwrap().code {
-                    // if the key is q, quit
+                let ev = ev.as_key_event().unwrap();
+                match ev.code {
+                    // allow quitting with Ctrl-C
+                    KeyCode::Char('c') => {
+                        if ev.modifiers.contains(KeyModifiers::CONTROL) {
+                            self.exit = true;
+                        }
+                    }
+                    // if the key is q, also quit
                     KeyCode::Char('q') => self.exit = true,
+                    // DEBUG: p for press the debug keys
                     KeyCode::Char('p') => {
-                        self.pianoroll.press_key(0);
-                        self.pianoroll.press_key(1);
+                        DEBUG_KEYS
+                            .iter()
+                            .for_each(|k| self.pianoroll.press_key(*k as u16));
                     }
+                    // DEBUG: r to release them
                     KeyCode::Char('r') => {
-                        self.pianoroll.release_key(0);
-                        self.pianoroll.release_key(1);
+                        DEBUG_KEYS
+                            .iter()
+                            .for_each(|k| self.pianoroll.release_key(*k as u16));
                     }
-                    // otherwise update a frame
+                    // DEBUG: otherwise update a frame
                     _ => self.pianoroll.update(height as i32),
                 };
             }
