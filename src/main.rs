@@ -1,5 +1,6 @@
 use std::io;
 
+mod keyboard;
 mod piano;
 
 fn main() -> io::Result<()> {
