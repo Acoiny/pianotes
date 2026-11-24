@@ -855,6 +855,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
+name = "minimidi"
+version = "0.1.0"
+dependencies = [
+ "crossterm",
+ "midir",
+ "ratatui",
+]
+
+[[package]]
 name = "mio"
 version = "1.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1224,15 +1233,6 @@ name = "rand_core"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
-
-[[package]]
-name = "ratatata"
-version = "0.1.0"
-dependencies = [
- "crossterm",
- "midir",
- "ratatui",
-]
 
 [[package]]
 name = "ratatui"
