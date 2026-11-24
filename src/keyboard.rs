@@ -1,5 +1,4 @@
 use ratatui::{
-    DefaultTerminal, Frame,
     buffer::Buffer,
     layout::Rect,
     style::{Color, Style, Stylize},
