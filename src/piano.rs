@@ -1,6 +1,6 @@
-use std::io;
+use std::{collections::VecDeque, io};
 
-use crossterm::event;
+use crossterm::event::{self, KeyCode};
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
@@ -17,13 +17,32 @@ pub struct Piano {
     exit: bool,
 }
 
+const COLOR_NATURAL: ratatui::prelude::Color = Color::Blue;
+const COLOR_ACCIDENTAL: ratatui::prelude::Color = Color::Cyan;
+
+const PIANO_HEIGHT: u16 = 5;
+
 impl Piano {
     pub fn run(&mut self, term: &mut DefaultTerminal) -> io::Result<()> {
+        let mut height = 0;
         while !self.exit {
-            term.draw(|frame| self.draw(frame))?;
+            term.draw(|frame| {
+                self.draw(frame);
+                // self.pianoroll.update(frame.area().height as i32);
+                height = frame.area().height - PIANO_HEIGHT; // TODO: remove, this is for debugging
+            })?;
 
-            if event::read()?.is_key_press() {
-                self.exit = true;
+            let ev = event::read()?;
+
+            if ev.is_key_press() {
+                match ev.as_key_event().unwrap().code {
+                    // if the key is q, quit
+                    KeyCode::Char('q') => self.exit = true,
+                    KeyCode::Char('p') => self.pianoroll.press_key(0),
+                    KeyCode::Char('r') => self.pianoroll.release_key(0),
+                    // otherwise update a frame
+                    _ => self.pianoroll.update(height as i32),
+                };
             }
         }
 
@@ -39,16 +58,18 @@ impl Piano {
 
     fn draw(&self, frame: &mut Frame) {
         // cut the area in smaller pieces, so the piano is at the bottom
-        let piano_height = 5;
 
-        let area = Rect::new(
+        let keys_area = Rect::new(
             0,
-            frame.area().height - piano_height,
+            frame.area().height - PIANO_HEIGHT,
             frame.area().width,
-            piano_height,
+            PIANO_HEIGHT,
         );
 
-        frame.render_widget(&self.keyboard, area);
+        let roll_area = Rect::new(0, 0, frame.area().width, frame.area().height - PIANO_HEIGHT);
+
+        frame.render_widget(&self.keyboard, keys_area);
+        frame.render_widget(&self.pianoroll, roll_area);
     }
 }
 
@@ -64,7 +85,7 @@ impl Widget for &Keyboard {
         // considerations:
         //  if the terminal is smaller than 88, we render an error message/ask the user to resize
         // if the terminal is big enough, render each key one-wide
-        // if still big enough, render white keys double width, black one
+        // if still big enough, render white keys double width, black one?
         // maybe more options?
         if area.width < 88 || area.height == 0 {
             let msg = Line::from("Terminal too small!".bold());
@@ -109,15 +130,88 @@ impl Widget for &Keyboard {
     }
 }
 
+#[derive(Debug, Default, Clone, Copy)]
+struct Keypress {
+    pressed_y: i32,
+    released_y: i32,
+    released: bool,
+}
+
 #[derive(Debug)]
 // Renders all the currently pressed keys and scrolls them
 struct Keyroll {
-    keys: [u32; 88],
+    keys: [VecDeque<Keypress>; 88],
+    height: i32,
+}
+
+impl Keyroll {
+    fn update(&mut self, height: i32) {
+        self.height = height;
+        // update all key presses
+        for key in &mut self.keys {
+            for press in key {
+                Self::update_single_keypress(press);
+            }
+        }
+
+        // remove elements that are out of bounds
+        // for key in &mut self.keys {
+        //     key.retain(|press| {
+        //         // Return false when this press is out of bounds.
+        //         true
+        //     });
+        // }
+
+        // for removal we only look at the last element
+        for key in &mut self.keys {
+            // remove it, if it is released and the released index is out of bounds
+            if let Some(last) = key.back()
+                && last.released
+                && last.released_y < 0
+            {
+                key.pop_back();
+            }
+        }
+    }
+
+    fn press_key(&mut self, key: u16) {
+        // DON'T add press, if the last one has NOT been released yet
+        if let Some(press) = self.keys[key as usize].front()
+            && !press.released
+        {
+            return;
+        }
+
+        // add new key
+        self.keys[key as usize].push_front(Keypress {
+            pressed_y: self.height,
+            released_y: self.height,
+            released: false,
+        });
+    }
+
+    fn release_key(&mut self, key: u16) {
+        if let Some(press) = self.keys[key as usize].front_mut() {
+            press.released = true;
+        }
+    }
+
+    fn update_single_keypress(key: &mut Keypress) {
+        key.pressed_y = (key.pressed_y - 1).max(0);
+
+        if key.released {
+            key.released_y -= 1;
+        }
+    }
 }
 
 impl Default for Keyroll {
     fn default() -> Self {
-        Keyroll { keys: [0; 88] }
+        Keyroll {
+            // fill with empty queues
+            keys: std::array::from_fn(|_| VecDeque::new()),
+            height: 0,
+        }
     }
 }
 
@@ -126,6 +220,41 @@ impl Widget for &Keyroll {
     where
         Self: Sized,
     {
-        todo!()
+        if area.width < 88 || area.height == 0 {
+            return;
+        }
+        //
+        // Paragraph::new(Line::from(format!("Rect: {:?}", area).bold()))
+        //     .centered()
+        //     .render(area, buf);
+        // return;
+
+        let width_scale = if area.width > 88 * 2 { 2 } else { 1 };
+
+        let col_accidental = Style::default().bg(COLOR_ACCIDENTAL).fg(COLOR_ACCIDENTAL);
+        let col_natural = Style::default().bg(COLOR_NATURAL).fg(COLOR_NATURAL);
+
+        for i in 0u16..88 {
+            let accidental = Piano::is_accidental(i);
+
+            let col = if accidental {
+                col_accidental
+            } else {
+                col_natural
+            };
+
+            for press in &self.keys[i as usize] {
+                let height = if press.released {
+                    (press.released_y - press.pressed_y) as u16
+                } else {
+                    area.height - press.pressed_y as u16
+                };
+
+                let rect = Rect::new(i * width_scale, press.pressed_y as u16, width_scale, height);
+                // eprintln!("Press: {:?}", rect);
+
+                buf.set_style(rect, col);
+            }
+        }
     }
 }
