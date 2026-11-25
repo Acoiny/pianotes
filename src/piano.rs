@@ -97,16 +97,20 @@ impl Piano {
 
             while let Ok(msg) = rx.try_recv() {
                 // set/unset notes
-                // eprint!("Received: {:?}", val);
                 match msg.len() {
                     3 => {
-                        let note = msg[1] - 21; // just plain subtract 21 here
-                        let power = msg[2];
+                        // only accept valid messages
+                        if msg[1] >= 21 && msg[1] <= 108 {
+                            let note = msg[1] - 21; // just plain subtract 21 here
+                            let power = msg[2];
 
-                        if power == 0 {
-                            self.pianoroll.release_key(note as u16);
+                            if power == 0 {
+                                self.pianoroll.release_key(note as u16);
+                            } else {
+                                self.pianoroll.press_key(note as u16);
+                            }
                         } else {
-                            self.pianoroll.press_key(note as u16);
+                            eprint!("Invalid message: {:?}", msg);
                         }
                     }
                     _ => {}
