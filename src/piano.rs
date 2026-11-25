@@ -6,7 +6,7 @@ use midir::{Ignore, MidiInput, MidiInputPort};
 
 use crossterm::event::{self, KeyCode, KeyModifiers};
 use ratatui::style::Style;
-use ratatui::text::Line;
+use ratatui::text::{Line, ToText};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Widget};
 use ratatui::{DefaultTerminal, Frame, layout::Rect, style::Color};
 
@@ -34,8 +34,17 @@ impl Piano {
 
         let (midi, port) = self.setup_midi(term).unwrap(); // TODO: error handling
 
+        let (tx, rx) = std::sync::mpsc::channel();
+
         let _connection = midi
-            .connect(&port, "pianote-midi-input", |_, message, _| {}, ())
+            .connect(
+                &port,
+                "pianote-midi-input",
+                move |_, message, _| {
+                    tx.send(message.to_vec()).unwrap(); // TODO: don't unwrap? idk, crash should be fine here
+                },
+                (),
+            )
             .unwrap();
 
         // main loop
@@ -77,8 +86,7 @@ impl Piano {
                                 .iter()
                                 .for_each(|k| self.pianoroll.release_key(*k as u16));
                         }
-                        // DEBUG: otherwise update a frame
-                        _ => self.pianoroll.update(height as i32),
+                        _ => {}
                     };
                 }
             }
@@ -86,6 +94,24 @@ impl Piano {
             // sleep for 33 milliseconds ~30 fps
             std::thread::sleep(Duration::from_millis(33));
             self.pianoroll.update(height as i32);
+
+            while let Ok(msg) = rx.try_recv() {
+                // set/unset notes
+                // eprint!("Received: {:?}", val);
+                match msg.len() {
+                    3 => {
+                        let note = msg[1] - 21; // just plain subtract 21 here
+                        let power = msg[2];
+
+                        if power == 0 {
+                            self.pianoroll.release_key(note as u16);
+                        } else {
+                            self.pianoroll.press_key(note as u16);
+                        }
+                    }
+                    _ => {}
+                }
+            }
         }
 
         Ok(())
