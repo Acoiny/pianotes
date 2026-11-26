@@ -14,3 +14,4 @@ Piano visualizer that runs in the terminal. Written in `rust`.
 - [ ] Color configuration via a config file
 - [ ] More GUI elements to control
 - [ ] save to midi file?
+- [ ] Color pressed keys on the keyboard as well

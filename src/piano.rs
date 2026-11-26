@@ -99,6 +99,8 @@ impl Piano {
                 // set/unset notes
                 match msg.len() {
                     3 => {
+                        // figure out the message type
+
                         // only accept valid messages
                         if msg[1] >= 21 && msg[1] <= 108 {
                             let note = msg[1] - 21; // just plain subtract 21 here
@@ -109,8 +111,6 @@ impl Piano {
                             } else {
                                 self.pianoroll.press_key(note as u16);
                             }
-                        } else {
-                            eprint!("Invalid message: {:?}", msg);
                         }
                     }
                     _ => {}
