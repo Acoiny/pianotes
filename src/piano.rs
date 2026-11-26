@@ -5,30 +5,35 @@ use std::time::Duration;
 use midir::{Ignore, MidiInput, MidiInputPort};
 
 use crossterm::event::{self, KeyCode, KeyModifiers};
+use ratatui::prelude::Color;
 use ratatui::style::Style;
-use ratatui::text::{Line, ToText};
+use ratatui::text::Line;
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph, Widget};
-use ratatui::{DefaultTerminal, Frame, layout::Rect, style::Color};
+use ratatui::{DefaultTerminal, Frame, layout::Rect};
 
+use crate::colors::Notecolors;
 use crate::keyboard::Keyboard;
 use crate::keyroll::Keyroll;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Piano {
     keyboard: Keyboard,
     pianoroll: Keyroll,
     exit: bool,
 }
 
-pub const COLOR_NATURAL: ratatui::prelude::Color = Color::Blue;
-pub const COLOR_ACCIDENTAL: ratatui::prelude::Color = Color::Cyan;
-
 // height of the piano in terminal lines
 const PIANO_HEIGHT: u16 = 5;
 
-const DEBUG_KEYS: [i32; 3] = [27, 31, 34];
-
 impl Piano {
+    pub fn new(colors: Notecolors) -> Self {
+        Self {
+            keyboard: Keyboard::new(colors),
+            pianoroll: Keyroll::new(colors),
+            exit: false,
+        }
+    }
+
     pub fn run(&mut self, term: &mut DefaultTerminal) -> io::Result<()> {
         let mut height = 0;
 
@@ -74,17 +79,9 @@ impl Piano {
                         }
                         // if the key is q, also quit
                         KeyCode::Char('q') => self.exit = true,
-                        // DEBUG: p for press the debug keys
-                        KeyCode::Char('p') => {
-                            DEBUG_KEYS
-                                .iter()
-                                .for_each(|k| self.pianoroll.press_key(*k as u16));
-                        }
-                        // DEBUG: r to release them
+                        // r to release all keys. Useful when a midi device has been disconnected
                         KeyCode::Char('r') => {
-                            DEBUG_KEYS
-                                .iter()
-                                .for_each(|k| self.pianoroll.release_key(*k as u16));
+                            (0..88).for_each(|key| self.release_key(key));
                         }
                         _ => {}
                     };
@@ -96,29 +93,44 @@ impl Piano {
             self.pianoroll.update(height as i32);
 
             while let Ok(msg) = rx.try_recv() {
-                // set/unset notes
-                match msg.len() {
-                    3 => {
-                        // figure out the message type
+                // check message type
+                // we just assume that no messages are malformed, which should
+                // be a reasonable approach. midir is responsible for that :P
+                match (msg[0] & 0xf0) >> 4 {
+                    // note off
+                    0b1000 => {
+                        let note = msg[1] - 21; // note must be on piano
 
-                        // only accept valid messages
-                        if msg[1] >= 21 && msg[1] <= 108 {
-                            let note = msg[1] - 21; // just plain subtract 21 here
-                            let power = msg[2];
+                        self.release_key(note as u16);
+                    }
+                    // note on
+                    0b1001 => {
+                        let note = msg[1] - 21; // note must be on piano
+                        let vel = msg[2];
 
-                            if power == 0 {
-                                self.pianoroll.release_key(note as u16);
-                            } else {
-                                self.pianoroll.press_key(note as u16);
-                            }
+                        if vel == 0 {
+                            self.release_key(note as u16);
+                        } else {
+                            self.press_key(note as u16);
                         }
                     }
+                    // ignore all other events for now
                     _ => {}
                 }
             }
         }
 
         Ok(())
+    }
+
+    fn release_key(&mut self, key: u16) {
+        self.pianoroll.release_key(key as u16);
+        self.keyboard.release_key(key as u16);
+    }
+
+    fn press_key(&mut self, key: u16) {
+        self.pianoroll.press_key(key as u16);
+        self.keyboard.press_key(key as u16);
     }
 
     // Set up the midi device and prompt the user for a midi port, if multiple are visible

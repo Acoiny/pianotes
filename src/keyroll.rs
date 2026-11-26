@@ -2,9 +2,10 @@ use std::collections::VecDeque;
 
 use ratatui::{buffer::Buffer, layout::Rect, style::Style, widgets::Widget};
 
-use crate::piano::{COLOR_ACCIDENTAL, COLOR_NATURAL, Piano};
+use crate::colors::Notecolors;
+use crate::piano::Piano;
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct Keypress {
     pressed_y: i32,
     released_y: i32,
@@ -16,9 +17,18 @@ struct Keypress {
 pub struct Keyroll {
     keys: [VecDeque<Keypress>; 88],
     height: i32,
+    colors: Notecolors,
 }
 
 impl Keyroll {
+    pub fn new(colors: Notecolors) -> Self {
+        Self {
+            // fill with empty queues
+            keys: std::array::from_fn(|_| VecDeque::new()),
+            height: 0,
+            colors: colors,
+        }
+    }
     pub fn update(&mut self, height: i32) {
         self.height = height;
         // update all key presses
@@ -79,16 +89,6 @@ impl Keyroll {
     }
 }
 
-impl Default for Keyroll {
-    fn default() -> Self {
-        Keyroll {
-            // fill with empty queues
-            keys: std::array::from_fn(|_| VecDeque::new()),
-            height: 0,
-        }
-    }
-}
-
 impl Widget for &Keyroll {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
@@ -105,8 +105,12 @@ impl Widget for &Keyroll {
 
         let width_scale = if area.width > 88 * 2 { 2 } else { 1 };
 
-        let col_accidental = Style::default().bg(COLOR_ACCIDENTAL).fg(COLOR_ACCIDENTAL);
-        let col_natural = Style::default().bg(COLOR_NATURAL).fg(COLOR_NATURAL);
+        let col_accidental = Style::default()
+            .bg(self.colors.accidental)
+            .fg(self.colors.accidental);
+        let col_natural = Style::default()
+            .bg(self.colors.natural)
+            .fg(self.colors.natural);
 
         for i in 0u16..88 {
             let accidental = Piano::is_accidental(i);
