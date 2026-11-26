@@ -9,7 +9,8 @@ Piano visualizer that runs in the terminal. Written in `rust`.
 > made by the incredible [Dave Eddy](https://github.com/bahamas10).
 
 # TODO
-- [x] Finish midi reading
+- [/] Finish midi reading
+- [ ] Check actual midi messages for note on/off type
 - [ ] Allow reading from midi files (kinda works with `aplaymidi`, but native solution would be nice)
 - [ ] Color configuration via a config file
 - [ ] More GUI elements to control
