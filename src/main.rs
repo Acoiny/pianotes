@@ -8,6 +8,6 @@ mod keyroll;
 mod piano;
 
 fn main() -> io::Result<()> {
-    let colors = Notecolors::default();
+    let colors = Notecolors::from_file("colors.toml").unwrap_or_default();
     ratatui::run(|term| piano::Piano::new(colors).run(term))
 }

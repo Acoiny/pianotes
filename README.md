@@ -16,3 +16,8 @@ Piano visualizer that runs in the terminal. Written in `rust`.
 - [ ] More GUI elements to control
 - [ ] save to midi file?
 - [ ] Color pressed keys on the keyboard as well
+
+## Cli flags
+What cli flags should pianotes support?
+- colors
+    - color config file for reading from
