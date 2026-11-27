@@ -5,7 +5,6 @@ use std::{
     io::{Error, ErrorKind, Result},
     path::Path,
 };
-use toml::{Table, Value, map::Map};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Notecolors {

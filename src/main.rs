@@ -20,7 +20,7 @@ fn main() -> io::Result<()> {
     let args = Args::parse();
 
     let colors = if let Some(file) = args.colors {
-        Notecolors::from_file("colors.toml").unwrap_or_default()
+        Notecolors::from_file(file).unwrap_or_default()
     } else {
         Notecolors::default()
     };
