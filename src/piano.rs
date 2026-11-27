@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::io;
+use std::io::{self, ErrorKind};
 use std::time::Duration;
 
 use midir::{Ignore, MidiInput, MidiInputPort};
@@ -37,7 +37,13 @@ impl Piano {
     pub fn run(&mut self, term: &mut DefaultTerminal) -> io::Result<()> {
         let mut height = 0;
 
-        let (midi, port) = self.setup_midi(term).unwrap(); // TODO: error handling
+        let res = self.setup_midi(term);
+
+        if let Err(err) = res {
+            return Err(io::Error::new(ErrorKind::Other, format!("{}", err)));
+        }
+
+        let (midi, port) = res.unwrap();
 
         let (tx, rx) = std::sync::mpsc::channel();
 
